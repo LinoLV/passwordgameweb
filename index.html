@@ -246,9 +246,7 @@
 <audio id="completeSound" src="complete.mp3" preload="auto"></audio>
 
 <script>
-const common_patterns = ["1234", "qwerty", "11111", "123", "abc123", "0000", "password",
-    "7777", "999", "qwertyuiop", "444", "333", "8888", "6666",
-    "789", "4567", "3456"];
+const common_patterns = ["1234", "qwerty", "11111", "123", "abc123", "0000", "password","7777", "999", "qwertyuiop", "444", "333", "8888", "6666","789", "4567", "3456"];
 const months = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 const nos = ["one","two","three","four","five","six","seven","eight","nine","ten"];
 const colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink", "black", "white", "brown", "gray", "grey", "magenta", "lime", "cyan", "violet", "indigo"];
@@ -265,26 +263,33 @@ const completeSound = document.getElementById('completeSound');
 
 let typingTimeout;
 let lastRulesText = "";
-
-let keyboardAudioContext;
 let lastKeySoundTime = 0;
+let audioUnlocked = false;
 
 const keyboardSoundFolder = './sounds/';
-const keyboardSoundFiles = [
-    'key1.wav','key2.wav','key3.wav','key4.wav','key5.wav','key6.wav',
-    'back.wav','tab.wav','ent.wav','ctrl.wav','shift.wav','space.wav','caps.wav'
-];
+const keyboardSoundFiles = ['key1.wav','key2.wav','key3.wav','key4.wav','key5.wav','key6.wav','back.wav','tab.wav','ent.wav','ctrl.wav','shift.wav','space.wav','caps.wav'];
 const keyboardSounds = {};
 keyboardSoundFiles.forEach(file => {
-    const audio = new Audio(keyboardSoundFolder + file);
-    audio.preload = 'auto';
-    audio.volume = 0.5;
-    keyboardSounds[file] = audio;
+    const a = new Audio(keyboardSoundFolder + file);
+    a.preload = 'auto';
+    a.volume = 0.5;
+    keyboardSounds[file] = a;
 });
 
-let lastKeySoundTime = 0;
+function unlockAllAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    // play silent to unlock browser autoplay
+    [...Object.values(keyboardSounds), errorSound, completeSound].forEach(a => {
+        a.volume = 0;
+        a.play().then(() => { a.pause(); a.currentTime = 0; a.volume = 0.5; }).catch(()=>{ a.volume = 0.5; });
+    });
+    errorSound.volume = 1;
+    completeSound.volume = 1;
+}
 
 function playKeyboardSound(key) {
+    unlockAllAudio();
     let file;
     if (key === 'Backspace' || key === 'Delete') file = 'back.wav';
     else if (key === 'Enter') file = 'ent.wav';
@@ -292,183 +297,79 @@ function playKeyboardSound(key) {
     else if (key === 'Tab') file = 'tab.wav';
     else if (key === 'Shift') file = 'shift.wav';
     else if (key === 'Control') file = 'ctrl.wav';
-    else if (key === 'CapsLock') file = 'caps.wav'; // <-- you were missing this
-    else {
-        file = `key${Math.floor(Math.random() * 6) + 1}.wav`;
-    }
+    else if (key === 'CapsLock') file = 'caps.wav';
+    else file = `key${Math.floor(Math.random() * 6) + 1}.wav`;
 
     const now = performance.now();
-    if (now - lastKeySoundTime < 20) return; // small debounce
+    if (now - lastKeySoundTime < 15) return;
     lastKeySoundTime = now;
 
-    const original = keyboardSounds[file];
-    if (!original) {
-        console.warn('Missing sound:', file);
-        return;
-    }
-    
-    try {
-        original.currentTime = 0;
-        original.play().catch(e => console.warn('play blocked', file, e));
-    } catch(e) {
-        // Fallback with clone if currentTime fails
-        const clone = original.cloneNode();
-        clone.volume = 0.5;
-        clone.play().catch(()=>{});
-    }
+    const src = keyboardSoundFolder + file;
+    const s = new Audio(src);
+    s.volume = 0.5;
+    s.play().catch(err => console.log('Keyboard sound fail:', file, err));
+}
+
+function playGameSound(audioEl) {
+    unlockAllAudio();
+    audioEl.currentTime = 0;
+    audioEl.volume = 1;
+    audioEl.play().catch(()=>{});
 }
 
 passwordField.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    // play for ANY physical key press
-    if (e.key === 'CapsLock' || e.key === 'Shift' || e.key === 'Control' || e.key === 'Tab' || e.key === 'Enter' || e.key === 'Backspace' || e.key === 'Delete' || e.key.length === 1 || e.key === ' ') {
-        playKeyboardSound(e.key);
-    }
+    playKeyboardSound(e.key);
 });
 
-document.body.addEventListener('click', () => {
-    Object.values(keyboardSounds).forEach(a => {
-        a.play().then(()=>{ a.pause(); a.currentTime=0; }).catch(()=>{});
-    });
-}, { once: true });
-
-passwordField.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-    if (
-        e.key.length === 1 ||
-        ['Backspace', 'Delete', 'Enter', 'Tab', 'Shift', 'Control','CapsLock'].includes(e.key)
-    ) {
-        playKeyboardSound(e.key);
-    }
-});
-
-function has_total_25(p) {
-    return p.split('').filter(c => /\d/.test(c)).reduce((sum, c) => sum + parseInt(c), 0) === 25;
-}
-
-function animateRules() {
-    labelMessage.style.animation = 'none';
-    labelMessage.offsetHeight; 
-    labelMessage.style.animation = 'slideInBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards';
-}
-
+// --- REST OF YOUR GAME LOGIC (UNCHANGED) ---
+function has_total_25(p) { return p.split('').filter(c => /\d/.test(c)).reduce((sum, c) => sum + parseInt(c), 0) === 25; }
+function animateRules() { labelMessage.style.animation = 'none'; labelMessage.offsetHeight; labelMessage.style.animation = 'slideInBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards'; }
 function check_password(paswd) {
     charCount.textContent = `Characters: ${paswd.length}`;
-    if (!paswd) {
-        labelMessage.textContent = "";
-        labelMessage.style.animation = 'none';
-        lastRulesText = "";
-        return;
-    }
-
+    if (!paswd) { labelMessage.textContent = ""; labelMessage.style.animation = 'none'; lastRulesText = ""; return; }
     let rules = [];
-
     rules.push(["Password must contain a lowercase letter", p => /[a-z]/.test(p)]);
-    if (rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain an uppercase letter", p => /[A-Z]/.test(p)]);
+    if (rules[rules.length-1][1](paswd)) rules.push(["Password must contain an uppercase letter", p => /[A-Z]/.test(p)]);
+    if (rules.length == 2 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain at least 7 characters", p => p.length >= 7]);
+    if (rules.length == 3 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a number", p => /\d/.test(p)]);
+    if (rules.length == 4 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain the name of a month", p => months.some(m => p.toLowerCase().includes(m))]);
+    if (rules.length == 5 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a number name between 1-10", p => nos.some(n => p.toLowerCase().includes(n))]);
+    if (rules.length == 6 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a hashtag", p => p.includes('#')]);
+    if (rules.length == 7 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain '@'", p => p.includes('@')]);
+    if (rules.length == 8 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain the 'and' symbol", p => p.includes('&')]);
+    if (rules.length == 9 && rules[rules.length-1][1](paswd)) rules.push(["The digits in the password must add up to 25", p => has_total_25(p)]);
+    if (rules.length == 10 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain an exclamation mark", p => p.includes('!')]);
+    if (rules.length == 11 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain the star symbol", p => p.includes('*')]);
+    if (rules.length == 12 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a percentage symbol", p => p.includes('%')]);
+    if (rules.length == 13 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a question mark", p => p.includes('?')]);
+    if (rules.length == 14 && rules[rules.length-1][1](paswd)) rules.push(["Password must not contain a common pattern", p => !common_patterns.some(x => p.toLowerCase().includes(x))]);
+    if (rules.length == 15 && rules[rules.length-1][1](paswd)) rules.push(["Password must not contain spaces", p => !p.includes(' ')]);
+    if (rules.length == 16 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a Roman numeral (I, V, X, L, C, D or M)", p => /[IVXLCDM]/i.test(p)]);
+    if (rules.length == 17 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a color name", p => colors.some(c => p.toLowerCase().includes(c))]);
+    if (rules.length == 18 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain both an even and an odd digit", p => /[02468]/.test(p) && /[13579]/.test(p)]);
+    if (rules.length == 19 && rules[rules.length-1][1](paswd)) rules.push(["Password must contain a valid hex color code", p => hexRegex.test(p)]);
+    if (rules.length == 20 && rules[rules.length-1][1](paswd)) rules.push(["Password length must be a multiple of 3", p => p.length % 3 === 0]);
 
-    if (rules.length == 2 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain at least 7 characters", p => p.length >= 7]);
-
-    if (rules.length == 3 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a number", p => /\d/.test(p)]);
-
-    if (rules.length == 4 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain the name of a month", p => months.some(m => p.toLowerCase().includes(m))]);
-
-    if (rules.length == 5 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a number name between 1-10", p => nos.some(n => p.toLowerCase().includes(n))]);
-
-    if (rules.length == 6 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a hashtag", p => p.includes('#')]);
-
-    if (rules.length == 7 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain '@'", p => p.includes('@')]);
-
-    if (rules.length == 8 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain the 'and' symbol", p => p.includes('&')]);
-
-    if (rules.length == 9 && rules[rules.length-1][1](paswd))
-    rules.push(["The digits in the password must add up to 25", p => has_total_25(p)]);
-
-    if (rules.length == 10 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain an exclamation mark", p => p.includes('!')]);
-
-    if (rules.length == 11 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain the star symbol", p => p.includes('*')]);
-
-    if (rules.length == 12 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a percentage symbol", p => p.includes('%')]);
-
-    if (rules.length == 13 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a question mark", p => p.includes('?')]);
-
-    if (rules.length == 14 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must not contain a common pattern", p => !common_patterns.some(x => p.toLowerCase().includes(x))]);
-
-    if (rules.length == 15 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must not contain spaces", p => !p.includes(' ')]);
-
-    if (rules.length == 16 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a Roman numeral (I, V, X, L, C, D or M)", p => /[IVXLCDM]/i.test(p)]);
-
-    if (rules.length == 17 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a color name", p => colors.some(c => p.toLowerCase().includes(c))]);
-
-    if (rules.length == 18 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain both an even and an odd digit", p => /[02468]/.test(p) && /[13579]/.test(p)]);
-
-    if (rules.length == 19 && rules[rules.length-1][1](paswd))
-    rules.push(["Password must contain a valid hex color code", p => hexRegex.test(p)]);
-
-    if (rules.length == 20 && rules[rules.length-1][1](paswd))
-    rules.push(["Password length must be a multiple of 3", p => p.length % 3 === 0]);
-
-    let red_rules = [];
-    let green_rules = [];
-    let all_green = true;
-
+    let red_rules = []; let green_rules = []; let all_green = true;
     rules.forEach(([msg, check], i) => {
-        if (check(paswd)) {
-            green_rules.push(`<span class="green">Rule ${i+1}: ${msg}</span>`);
-        } else {
-            red_rules.push(`<span class="red">Rule ${i+1}: ${msg}</span>`);
-            all_green = false;
-        }
+        if (check(paswd)) green_rules.push(`<span class="green">Rule ${i+1}: ${msg}</span>`);
+        else { red_rules.push(`<span class="red">Rule ${i+1}: ${msg}</span>`); all_green = false; }
     });
-
     let new_text = [...red_rules, ...green_rules].join('<br><br>');
-
     if (new_text !== lastRulesText) {
-        if (!all_green) {
-            errorSound.currentTime = 0;
-            errorSound.play().catch(()=>{});
-        } else {
-            completeSound.currentTime = 0;
-            completeSound.play().catch(()=>{});
-            if (rules.length === 21) {
-                setTimeout(show_win_screen, 1000);
-            }
+        if (!all_green) playGameSound(errorSound);
+        else {
+            playGameSound(completeSound);
+            if (rules.length === 21) setTimeout(show_win_screen, 1000);
         }
     }
-
     labelMessage.innerHTML = new_text;
     animateRules();
     lastRulesText = new_text;
 }
-
-function show_win_screen() {
-    gameScreen.style.display = 'none';
-    winScreen.style.display = 'block';
-    setTimeout(() => winTitle.style.opacity = 1, 100);
-    setTimeout(() => winSub.style.opacity = 1, 300);
-}
-
-passwordField.addEventListener('input', (e) => {
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => check_password(e.target.value), 400);
-});
+function show_win_screen() { gameScreen.style.display = 'none'; winScreen.style.display = 'block'; setTimeout(() => winTitle.style.opacity = 1, 100); setTimeout(() => winSub.style.opacity = 1, 300); }
+passwordField.addEventListener('input', (e) => { clearTimeout(typingTimeout); typingTimeout = setTimeout(() => check_password(e.target.value), 400); });
 </script>
 </body>
 </html>
