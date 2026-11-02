@@ -6,7 +6,7 @@
 <title>Lino's Password Game</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@700&display=swap" rel="stylesheet">
 <style>
-    * { box-sizing: border-box; font-family: 'Noto Sans', sans-serif; }
+    * { box-sizing: border-box;font-family: 'Noto Sans', sans-serif; }
     body {
         margin: 0;
         background: #121212;
@@ -62,6 +62,97 @@
 
     .red { color: #FF0000; }
     .green { color: #00FF00; }
+    
+    .discord-btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 12px 24px;
+        background: #5865F2;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: transform 0.2s, background 0.2s;
+    }
+    
+.social-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    border-radius: 24px;
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition:
+        width 0.3s ease,
+        gap 0.3s ease,
+        transform 0.2s ease;
+}
+
+.social-btn img {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.social-btn span {
+    opacity: 0;
+    max-width: 0;
+    overflow: hidden;
+    transition:
+        opacity 0.2s ease,
+        max-width 0.3s ease;
+}
+
+.social-btn:hover {
+    width: 140px;
+    gap: 10px;
+    transform: scale(1.05);
+}
+
+.social-btn:hover span {
+    opacity: 1;
+    max-width: 100px;
+}
+
+.discord-social {
+    background: #5865F2;
+}
+
+.youtube-social {
+    background: #FF0000;
+}
+
+.social-btn:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .social-btn,
+    .social-btn span {
+        transition: none;
+    }
+}
+
+    .discord-btn:hover {
+        background: #4752C4;
+        transform: scale(1.05);
+    }
 
     #footer {
         text-align: center;
@@ -94,11 +185,60 @@
         <input type="text" id="password_field" placeholder="Start typing your password" autocomplete="off">
         <div id="char_count">Characters: 0</div>
         <div id="label_message"></div>
+        
+        <div id="footer">
+            
+<div class="social-buttons">
+
+    <a href="https://discord.gg/XVQNrWJg5c"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="social-btn discord-social"
+       aria-label="Discord">
+
+        <img src="discord.png" alt="">
+        <span>Discord</span>
+    </a>
+
+    <a href="https://youtube.com/@linolv"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="social-btn youtube-social"
+       aria-label="YouTube">
+
+        <img src="youtube.png" alt="">
+        <span>YouTube</span>
+    </a>
+
+</div>
+
+        </div>
     </div>
 
     <div id="winScreen">
         <div id="winTitle">YOU WON!</div>
         <div id="winSub">Thanks for Playing Lino's Password Game</div>
+        <div class="social-buttons">
+
+    <a href="https://discord.gg/XVQNrWJg5c"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="social-btn discord-social"
+       aria-label="Discord">
+
+        <img src="discord.png" alt="">
+        <span>Discord</span>
+    </a>
+
+    <a href="https://youtube.com/@linolv"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="social-btn youtube-social"
+       aria-label="YouTube">
+
+        <img src="youtube.png" alt="">
+        <span>YouTube</span>
+    </a>
     </div>
 </div>
 
@@ -125,6 +265,84 @@ const completeSound = document.getElementById('completeSound');
 
 let typingTimeout;
 let lastRulesText = "";
+
+let keyboardAudioContext;
+let lastKeySoundTime = 0;
+
+const keyboardSoundFolder = './sounds/';
+
+const keyboardSoundFiles = [
+    'key1.wav',
+    'key2.wav',
+    'key3.wav',
+    'key4.wav',
+    'key5.wav',
+    'key6.wav',
+    'back.wav',
+    'tab.wav',
+    'ent.wav',
+    'ctrl.wav',
+    'shift.wav',
+    'space.wav',
+    'caps.wav'
+];
+
+const keyboardSounds = {};
+
+keyboardSoundFiles.forEach(file => {
+    const audio = new Audio(keyboardSoundFolder + file);
+    audio.preload = 'auto';
+    audio.volume = 0.5;
+    keyboardSounds[file] = audio;
+});
+
+function playKeyboardSound(key) {
+}
+
+function playKeyboardSound(key) {
+    let file;
+
+    if (key === 'Backspace' || key === 'Delete') {
+        file = 'back.wav';
+    } else if (key === 'Enter') {
+        file = 'ent.wav';
+    } else if (key === ' ') {
+        file = 'space.wav';
+    } else if (key === 'Tab') {
+        file = 'tab.wav';
+    } else if (key === 'Shift') {
+        file = 'shift.wav';
+    } else if (key === 'Control') {
+        file = 'ctrl.wav';
+    } else {
+        file = `key${Math.floor(Math.random() * 6) + 1}.wav`;
+    }
+
+    const now = performance.now();
+    if (now - lastKeySoundTime < 25) return;
+    lastKeySoundTime = now;
+
+    const original = keyboardSounds[file];
+    if (!original) return;
+
+    const sound = original.cloneNode();
+    sound.volume = 0.5;
+
+    sound.play().catch(error => {
+        console.error('Could not play keyboard sound:', file, error);
+    });
+}
+
+passwordField.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (
+        e.key.length === 1 ||
+        ['Backspace', 'Delete', 'Enter', 'Tab', 'Shift', 'Control','CapsLock'].includes(e.key)
+    ) {
+        playKeyboardSound(e.key);
+    }
+});
 
 function has_total_25(p) {
     return p.split('').filter(c => /\d/.test(c)).reduce((sum, c) => sum + parseInt(c), 0) === 25;
