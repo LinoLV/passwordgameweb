@@ -242,8 +242,8 @@
     </div>
 </div>
 
-<audio id="errorSound" src="error.mp3" preload="auto"></audio>
-<audio id="completeSound" src="complete.mp3" preload="auto"></audio>
+<audio id="errorSound" src="./sounds/error.mp3" preload="auto"></audio>
+<audio id="completeSound" src="./sounds/complete.mp3" preload="auto"></audio>
 
 <script>
 const common_patterns = ["1234", "qwerty", "11111", "123", "abc123", "0000", "password",
@@ -296,8 +296,14 @@ keyboardSoundFiles.forEach(file => {
     keyboardSounds[file] = audio;
 });
 
-function playKeyboardSound(key) {
-}
+document.addEventListener('touchstart', () => {
+    Object.values(keyboardSounds).forEach(sound => {
+        sound.play().then(() => {
+            sound.pause();
+            sound.currentTime = 0;
+        }).catch(() => {});
+    });
+}, { once: true });
 
 function playKeyboardSound(key) {
     let file;
@@ -333,13 +339,27 @@ function playKeyboardSound(key) {
     });
 }
 
-passwordField.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+passwordField.addEventListener('beforeinput', (e) => {
+    let keyDetected = '';
 
-    if (
-        e.key.length === 1 ||
-        ['Backspace', 'Delete', 'Enter', 'Tab', 'Shift', 'Control','CapsLock'].includes(e.key)
-    ) {
+    if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
+        keyDetected = 'Backspace';
+    } else if (e.inputType === 'insertLineBreak') {
+        keyDetected = 'Enter';
+    } else if (e.inputType === 'insertText' || e.inputType === 'insertCompositionText') {
+        keyDetected = e.data === ' ' ? ' ' : 'RegularKey';
+    }
+
+    if (keyDetected) {
+        playKeyboardSound(keyDetected);
+    }
+});
+
+passwordField.addEventListener('keydown', (e) => {
+    const structuralKeys = ['Backspace', 'Delete', 'Enter', 'Tab', 'Shift', 'Control'];
+    if (structuralKeys.includes(e.key) || e.key === ' ') {
+        if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Enter') return;
+        
         playKeyboardSound(e.key);
     }
 });
