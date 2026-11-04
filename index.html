@@ -63,18 +63,6 @@
     .red { color: #FF0000; }
     .green { color: #00FF00; }
     
-    .discord-btn {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 12px 24px;
-        background: #5865F2;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: transform 0.2s, background 0.2s;
-    }
-    
 .social-buttons {
     display: flex;
     justify-content: center;
@@ -87,7 +75,6 @@
     align-items: center;
     justify-content: flex-start;
     gap: 0;
-    width: 48px;
     height: 48px;
     padding: 12px;
     overflow: hidden;
@@ -102,7 +89,8 @@
         transform 0.2s ease;
 }
 
-.social-btn img {
+.social-btn img,
+.social-btn svg {
     width: 24px;
     height: 24px;
     flex-shrink: 0;
@@ -119,7 +107,6 @@
 }
 
 .social-btn:hover {
-    width: 140px;
     gap: 10px;
     transform: scale(1.05);
 }
@@ -129,8 +116,8 @@
     max-width: 100px;
 }
 
-.discord-social {
-    background: #5865F2;
+.github-social {
+    background: #24292e;
 }
 
 .youtube-social {
@@ -148,11 +135,6 @@
         transition: none;
     }
 }
-
-    .discord-btn:hover {
-        background: #4752C4;
-        transform: scale(1.05);
-    }
 
     #footer {
         text-align: center;
@@ -187,47 +169,27 @@
         <div id="label_message"></div>
         
         <div id="footer">
-            
-<div class="social-buttons">
-
-    <a href="https://discord.gg/XVQNrWJg5c"
-       target="_blank"
-       rel="noopener noreferrer"
-       class="social-btn discord-social"
-       aria-label="Discord">
-
-        <img src="discord.png" alt="">
-        <span>Discord</span>
-    </a>
-
-    <a href="https://youtube.com/@linolv"
-       target="_blank"
-       rel="noopener noreferrer"
-       class="social-btn youtube-social"
-       aria-label="YouTube">
-
-        <img src="youtube.png" alt="">
-        <span>YouTube</span>
-    </a>
-
-</div>
-
+            <div class="social-buttons" data-social-buttons></div>
         </div>
     </div>
 
     <div id="winScreen">
         <div id="winTitle">YOU WON!</div>
         <div id="winSub">Thanks for Playing Lino's Password Game</div>
-        <div class="social-buttons">
+        <div class="social-buttons" data-social-buttons></div>
+    </div>
+</div>
 
-    <a href="https://discord.gg/XVQNrWJg5c"
+<template id="socialButtonsTemplate">
+    <a href="https://github.com/linolv/passwordgame"
        target="_blank"
        rel="noopener noreferrer"
-       class="social-btn discord-social"
-       aria-label="Discord">
-
-        <img src="discord.png" alt="">
-        <span>Discord</span>
+       class="social-btn github-social"
+       aria-label="GitHub">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        <span>GitHub</span>
     </a>
 
     <a href="https://youtube.com/@linolv"
@@ -235,12 +197,10 @@
        rel="noopener noreferrer"
        class="social-btn youtube-social"
        aria-label="YouTube">
-
         <img src="youtube.png" alt="">
         <span>YouTube</span>
     </a>
-    </div>
-</div>
+</template>
 
 <audio id="errorSound" src="./sounds/error.mp3" preload="auto"></audio>
 <audio id="completeSound" src="./sounds/complete.mp3" preload="auto"></audio>
@@ -253,6 +213,7 @@ const months = ["january","february","march","april","may","june","july","august
 const nos = ["one","two","three","four","five","six","seven","eight","nine","ten"];
 const colors = ["red", "blue", "green", "yellow", "orange", "purple", "pink", "black", "white", "brown", "gray", "grey", "magenta", "lime", "cyan", "violet", "indigo"];
 const hexRegex = /#[0-9A-Fa-f]{6}/;
+const romanValues = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
 const passwordField = document.getElementById('password_field');
 const charCount = document.getElementById('char_count');
 const labelMessage = document.getElementById('label_message');
@@ -262,6 +223,11 @@ const winTitle = document.getElementById('winTitle');
 const winSub = document.getElementById('winSub');
 const errorSound = document.getElementById('errorSound');
 const completeSound = document.getElementById('completeSound');
+
+const socialButtonsTemplate = document.getElementById('socialButtonsTemplate');
+document.querySelectorAll('[data-social-buttons]').forEach(container => {
+    container.append(socialButtonsTemplate.content.cloneNode(true));
+});
 
 let typingTimeout;
 let lastRulesText = "";
@@ -368,6 +334,11 @@ function has_total_25(p) {
     return p.split('').filter(c => /\d/.test(c)).reduce((sum, c) => sum + parseInt(c), 0) === 25;
 }
 
+function has_roman_total_28(p) {
+    const total = [...p].reduce((sum, c) => sum + (romanValues[c] || 0), 0);
+    return total === 28;
+}
+
 function animateRules() {
     labelMessage.style.animation = 'none';
     labelMessage.offsetHeight; 
@@ -446,6 +417,9 @@ function check_password(paswd) {
     if (rules.length == 20 && rules[rules.length-1][1](paswd))
     rules.push(["Password length must be a multiple of 3", p => p.length % 3 === 0]);
 
+    if (rules.length == 21 && rules[rules.length-1][1](paswd))
+    rules.push(["The Roman numerals in the password must add up to 28", p => has_roman_total_28(p)]);
+
     let red_rules = [];
     let green_rules = [];
     let all_green = true;
@@ -468,7 +442,7 @@ function check_password(paswd) {
         } else {
             completeSound.currentTime = 0;
             completeSound.play().catch(()=>{});
-            if (rules.length === 21) {
+            if (rules.length === 22) {
                 setTimeout(show_win_screen, 1000);
             }
         }
